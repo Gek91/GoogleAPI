@@ -1,8 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  
   <modelVersion>4.0.0</modelVersion>
-  <groupId>GMailTest</groupId>
-  <artifactId>GMailTest</artifactId>
+  <groupId>GoogleAPI</groupId>
+  <artifactId>GoogleAPI</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  
   <build>
     <sourceDirectory>src</sourceDirectory>
     <plugins>
@@ -10,78 +12,80 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
     </plugins>
   </build>
-  <properties>
+  
+  	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<logging.slf4j.version>1.7.12</logging.slf4j.version>
 		<logging.log4j.version>2.5</logging.log4j.version>
-		<resteasy.version>3.0.17.Final</resteasy.version>
-		<gae.sdk.runtime.version>1.9.34</gae.sdk.runtime.version>
-		
 	</properties>
-  <dependencies>
-  		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
-			<version>2.5</version>
-			<scope>provided</scope>
-		</dependency>
+	
+  	<dependencies>
+  			
+		<!-- Google Services dependencies -->
+		
 		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>4.0</version>
+		    <groupId>com.google.api-client</groupId>
+		    <artifactId>google-api-client</artifactId>
+		    <version>1.28.0</version>
 		</dependency>
+						
 		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-jaxrs</artifactId>
-			<version>${resteasy.version}</version>
+		    <groupId>com.google.oauth-client</groupId>
+		    <artifactId>google-oauth-client</artifactId>
+		    <version>1.28.0</version>
 		</dependency>
+				
 		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-guice</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.resteasy</groupId>
-			<artifactId>resteasy-jackson2-provider</artifactId>
-			<version>${resteasy.version}</version>
-		</dependency>
-	  	<dependency>
-			<groupId>com.google.appengine</groupId>
-			<artifactId>appengine-api-1.0-sdk</artifactId>
-			<version>${gae.sdk.runtime.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.api-client</groupId>
-			<artifactId>google-api-client</artifactId>
-			<version>1.23.0</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>guava-jdk5</artifactId>
-					<groupId>com.google.guava</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.google.http-client</groupId>
-			<artifactId>google-http-client-appengine</artifactId>
-			<version>1.23.0</version>
-		</dependency>
-		<dependency>
-	      <groupId>com.google.apis</groupId>
-	      <artifactId>google-api-services-gmail</artifactId>
-	      <version>v1-rev82-1.23.0</version>
-	    </dependency>
+ 			<groupId>com.google.apis</groupId>
+      		<artifactId>google-api-services-gmail</artifactId>
+      		<version>v1-rev98-1.25.0</version>
+    	</dependency>
+    		
 	    <dependency>
-			<groupId>com.google.apis</groupId>
-			<artifactId>google-api-services-drive</artifactId>
-			<version>v3-rev108-1.23.0</version>
+      		<groupId>com.google.apis</groupId>
+      		<artifactId>google-api-services-drive</artifactId>
+    	<version>v3-rev136-1.25.0</version>
+    	</dependency>
+    	
+    	<dependency>
+		    <groupId>com.google.apis</groupId>
+		    <artifactId>google-api-services-admin-directory</artifactId>
+		    <version>directory_v1-rev105-1.25.0</version>
 		</dependency>
+		
+		<dependency>
+		    <groupId>com.google.apis</groupId>
+		    <artifactId>google-api-services-calendar</artifactId>
+		    <version>v3-rev364-1.25.0</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>com.google.apis</groupId>
+		    <artifactId>google-api-services-groupssettings</artifactId>
+		    <version>v1-rev75-1.25.0</version>
+		</dependency>
+
+		<!-- Local auth -->
+		<dependency>
+		    <groupId>com.google.oauth-client</groupId>
+		    <artifactId>google-oauth-client-java6</artifactId>
+		    <version>1.28.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>com.google.oauth-client</groupId>
+		    <artifactId>google-oauth-client-jetty</artifactId>
+		    <version>1.28.0</version>
+		</dependency>
+    	
+    	<!-- Logging -->
+    	
 	  	<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -97,11 +101,21 @@
 			<artifactId>log4j-core</artifactId>
 			<version>${logging.log4j.version}</version>
 		</dependency>
+		
+		<!-- Apache util -->
+		
 		<dependency>
-		    <groupId>commons-lang</groupId>
-		    <artifactId>commons-lang</artifactId>
-		    <version>2.2</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.2</version>
 		</dependency>
 		
-  </dependencies>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.8.1</version>
+		</dependency>
+				
+  	</dependencies>
+  	
 </project>

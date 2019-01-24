@@ -1,0 +1,1580 @@
+	
+		List<Groups> groupSettings = GSuiteGroupService.getGroupSettingsbyEmails(
+				configService.getGoogleApisServiceAccountDomainAdminUser(), 
+				new ArrayList<String>(groupMail), 
+				"email, includeInGlobalAddressList");
+
+	private static final String[] SCOPES = new String[] { GroupssettingsScopes.APPS_GROUPS_SETTINGS };
+
+
+	@Override
+	public List<Groups> getGroupSettingsbyEmails(String executionGoogleUser, List<String> emails, String fields) {
+		if(emails == null || emails.isEmpty()) {
+			return null;
+		}
+		
+		List<BatchGroupsGoogleCallback> callbacks = new ArrayList<BatchGroupsGoogleCallback>();
+		
+		try {
+			
+			getLogger().info("GSuite GroupsSettings APIs - retrieve groups detail batch...");
+			
+			List<List<String>> listOfList = ListUtils.partition(emails, 50);
+			
+			int i = 0;
+			for(List<String> list : listOfList) {
+				
+				BatchRequest batchRequest = getDirectoryService(executionGoogleUser).batch();
+
+				for(String email : list) {
+					
+					BatchGroupsGoogleCallback callback = new BatchGroupsGoogleCallback();
+					
+					getDirectoryService(executionGoogleUser).groups()
+					.get(email).setFields(fields).queue(batchRequest, callback);
+					
+					callbacks.add(callback);
+				}
+				
+				getLogger().info("Executing {}° batch request", (i+1)+"");
+				batchRequest.execute();
+				i++;
+			}
+			
+			getLogger().info("GSuite GroupsSettings APIs - end retrieving groups detail batch.");
+
+		
+		} catch(Exception e) {
+			getLogger().error("Error in retrieving groups settings", e);
+			throw new RuntimeException(e);
+		}
+		
+		List<Groups> result = new ArrayList<Groups>();
+		for(BatchGroupsGoogleCallback callback : callbacks) {
+			
+			Groups value = callback.getResult();
+			if(value != null) {
+				result.add(value);
+			}
+		}
+		
+		return result;
+	}
+
+	class BatchGroupsGoogleCallback extends JsonBatchCallback<Groups> {
+		
+		private Groups result;
+		
+		public Groups getResult() {
+			return result;
+		}
+		
+		@Override
+		  public void onSuccess(Groups obj, HttpHeaders responseHeaders) { 
+			
+			this.result = obj;
+		}
+		
+		@Override
+	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
+			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
+	    }
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+		private static final String[] SCOPES = new String[] { DirectoryScopes.ADMIN_DIRECTORY_GROUP, DirectoryScopes.ADMIN_DIRECTORY_USER, DirectoryScopes.ADMIN_DIRECTORY_RESOURCE_CALENDAR };
+
+
+@Override
+	public Group getGroupByEmail(String executionGoogleUser, String email, String fields) {
+		
+		Group result = null;
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve group by email {}...", email);
+
+			result = getDirectoryService(executionGoogleUser).groups()
+					.get(email)
+					.setFields(fields)
+					.execute();
+			
+			getLogger().info("GSuite Admin APIs - end retrieving group by email {}.", email);
+
+		}  catch(Exception e) {
+			getLogger().error("Error in retrieving group", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public Groups getDomainGroupsList(String executionGoogleUser, String domain, String nextPageToken, String fields) {
+		
+		Groups result = null;
+
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve groups list for domain {} and nextPageToken {}..", domain, nextPageToken);
+									
+			result = getDirectoryService(executionGoogleUser).groups().list()
+					.setDomain(domain)
+					.setPageToken(nextPageToken)
+					.setFields(fields)
+					.execute();
+					
+			getLogger().info("GSuite Admin APIs - end retrieving groups list for domain {}.", domain);
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving groups list", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Users getDomainUsersList(String executionGoogleUser, String domain, String nextPageToken, String fields) {
+		
+		Users result = null;
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve users list for domain {} and nextPageToken {}...", domain, nextPageToken);
+				
+			result = getDirectoryService(executionGoogleUser).users().list()
+						.setDomain(domain)
+						.setPageToken(nextPageToken)
+						.setFields(fields)
+						.execute();
+			
+			getLogger().info("GSuite Admin APIs - end retrieving users list for domain {}.", domain);
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving groups list", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public List<Group> listUserGroups(String executionGoogleUser, String userId, String fields) {
+		
+		List<Group> result = new ArrayList<Group>();
+		
+		try {
+		
+			getLogger().info("GSuite Admin APIs - retrieve groups list for user {}...", userId);
+			
+			Groups groups = null;
+			
+			String nextPageToken = null;
+			
+			do {
+				groups = getDirectoryService(executionGoogleUser).groups().list()
+						.setUserKey(userId)
+						.setPageToken(nextPageToken)
+						.setFields(fields)
+						.execute();
+	
+				result.addAll(groups.getGroups());
+				
+			} while(groups.getNextPageToken() != null) ;
+		
+			getLogger().info("GSuite Admin APIs - end retrieving groups list for user {}.", userId);
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving groups list", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public Members getGroupUsersList(String executionGoogleUser, String groupId, String nextPageToken, String fields) {
+		
+		Members result = null;
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve group {} members and nextPageToken {}...", groupId, nextPageToken);
+						
+			result = getDirectoryService(executionGoogleUser).members()
+					.list(groupId)
+					.setFields(fields)
+					.setPageToken(nextPageToken)
+					.execute();
+						
+			getLogger().info("GSuite Admin APIs - end retrieving group {} members.", groupId);
+
+		} catch(Exception e) {
+			getLogger().error("Error retrieving group members", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override 
+	public CalendarResources getCalendarResources(String executionGoogleUser, String customerId, String nextPageToken, String fields) {
+		
+		CalendarResources result = null;
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve calendar resources with customer id {} and nextPageToken {}...", customerId, nextPageToken);
+
+			result = getDirectoryService(executionGoogleUser).resources().calendars()
+					.list(customerId)
+					.setFields(fields)
+					.setPageToken(nextPageToken)
+					.execute();
+			
+			getLogger().info("GSuite Admin APIs - end retrieving calendar resources with customer id {}.", customerId);
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving calendar resources", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Buildings getResourceBuildingList(String executionGoogleUser, String customerId, String nextPageToken, String fields) {
+		
+		Buildings result = null;
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve building resources with customer id {} and nextPageToken {}...", customerId, nextPageToken);
+
+			result = getDirectoryService(executionGoogleUser).resources().buildings()
+					.list(customerId)
+					.setFields(fields)
+					.setPageToken(nextPageToken)
+					.execute();
+			
+			getLogger().info("GSuite Admin APIs - end retrieving building resources with customer id {}.", customerId);
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving building resources", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public List<User> getUsersDetails(String executionGoogleUser, List<String> userids, String fields) {
+		if(userids == null)
+			return null;
+		
+		List<BatchUserGoogleCallback> callbacks = new ArrayList<BatchUserGoogleCallback>();
+		
+		try {
+			
+			getLogger().info("GSuite Admin APIs - retrieve users detail batch...");
+
+			List<List<String>> listOfList = ListUtils.partition(userids, 50);
+			
+			int i = 0;
+			for(List<String> list : listOfList) {
+				
+				BatchRequest batchRequest = getDirectoryService(executionGoogleUser).batch();
+
+				for(String id : list) {
+					
+					BatchUserGoogleCallback callback = new BatchUserGoogleCallback();
+					
+					getDirectoryService(executionGoogleUser).users()
+						.get(id)
+						.setFields(fields)
+						.queue(batchRequest, callback);
+
+					callbacks.add(callback);
+				}
+				
+				getLogger().info("Executing {}° batch request", (i+1)+"");
+				batchRequest.execute();
+				i++;
+			}
+			
+			getLogger().info("GSuite Admin APIs - end retrieving users detail batch.");
+			
+		} catch(Exception e) {
+			getLogger().error("Error retrieving group members", e);
+			throw new RuntimeException(e);
+		}
+		
+		List<User> result = new ArrayList<User>();
+		for(BatchUserGoogleCallback callback : callbacks) {
+			
+			if(callback.getResult() != null){
+				result.add(callback.getResult());
+			}
+		}
+		
+		return result;
+	}
+
+
+	class BatchUserGoogleCallback extends JsonBatchCallback<User> {
+		
+		private User result;
+				
+		public User getResult() {
+			return result;
+		}
+
+		public void setResult(User result) {
+			this.result = result;
+		}
+
+		@Override
+		  public void onSuccess(User obj, HttpHeaders responseHeaders) { 
+			
+			this.result = obj;
+		}
+		
+		@Override
+	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
+			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
+	    }
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		private static final String[] SCOPES = new String[] {CalendarScopes.CALENDAR };
+
+@Override
+	public Acl getCalendarAcl(String executionGoogleUser, String calendarEmail, String nextPageToken, String fields) {
+		
+		Acl result = null;
+		
+		try {
+			
+			getLogger().info("Calendar APIs - retrieve calendar Acl for calendar {} and nextPageToken {}..", calendarEmail, nextPageToken);
+
+			result = getCalendarService(executionGoogleUser).acl()
+						.list(calendarEmail)
+						.setFields(fields)
+						.setPageToken(nextPageToken)
+						.execute();
+			
+			getLogger().info("Calendar APIs - end retrieving calendar Acl for calenda {}.", calendarEmail);
+
+			
+		}  catch(Exception e) {
+			getLogger().error("Error retrieving resource acl", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+
+	public Events getCalendarEvents(String executionGoogleUser, String calendarEmail, Date timeMin, Date timeMax, String fields, String nextPageToken) {
+		
+		Events result = null;
+		
+		try {
+			
+			getLogger().info("Calendar APIs - retrieve calendar {} events...", calendarEmail);
+			
+			Calendar.Events.List list = getCalendarService(executionGoogleUser).events()
+					.list(calendarEmail)
+					.setFields(fields)
+					.setSingleEvents(true)
+					.setOrderBy("startTime")
+					.setPageToken(nextPageToken);
+			
+			if(timeMin != null) {
+				DateTime time = new DateTime(timeMin);
+				list.setTimeMin(time);
+				
+				if(timeMax != null) {
+					time = new DateTime(timeMax);
+					list.setTimeMax(time);
+				}
+			}
+			
+			result = list.execute();
+			
+			getLogger().info("Calendar APIs - end retrieving calendar {} events.", calendarEmail);
+			
+		}  catch(Exception e) {
+			getLogger().error("Error retrieving calendar events", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public Event getEvent(String executionGoogleUser, String calendarEmail, String eventId, String fields) {
+		
+		Event result = null;
+		
+		try {
+			
+			getLogger().info("Calendar APIs - retrieving calendar event {}...", eventId);
+
+			result = getCalendarService(executionGoogleUser).events()
+				.get(calendarEmail, eventId)
+				.setFields(fields)
+				.execute();
+			
+			getLogger().info("Calendar APIs - end retrieving calendar event {}.", eventId);
+		} catch(GoogleJsonResponseException  e) {
+			
+			if(e.getStatusCode() == 404) {
+				getLogger().error("Calendar event not found", e);
+				throw new EntityNotExistsException();
+			} else if (e.getStatusCode() == 503) {
+				getLogger().error("Calendar or event permission error", e);
+				throw new PermissionException();
+			}
+			
+			getLogger().error("Error retrieving calendar event", e);
+			throw new RuntimeException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("Error retrieving calendar event", e);
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public void deleteEvent(String executionGoogleUser, String calendarEmail, String eventId) {
+		
+		try {
+			
+			getLogger().info("Calendar APIs - delete calendar event {}...", eventId);
+			
+			getCalendarService(executionGoogleUser).events()
+				.delete(calendarEmail, eventId);
+			
+			getLogger().info("Calendar APIs - end deleting calendar event {}.", eventId);
+		}  catch(GoogleJsonResponseException  e) {
+			
+			if(e.getStatusCode() == 404) {
+				getLogger().error("Calendar event not found", e);
+				throw new EntityNotExistsException();
+			} else if (e.getStatusCode() == 503) {
+				getLogger().error("Calendar or event permission error", e);
+				throw new PermissionException();
+			}
+			
+			getLogger().error("Error retrieving calendar event", e);
+			throw new RuntimeException(e); 
+			
+		}  catch(Exception e) {
+			getLogger().error("Error deleting calendar event", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+
+	class BatchEventsGoogleCallback extends JsonBatchCallback<Events> {
+		
+		private Events result;
+				
+		public Events getResult() {
+			return result;
+		}
+
+		public void setResult(Events result) {
+			this.result = result;
+		}
+
+		@Override
+		  public void onSuccess(Events obj, HttpHeaders responseHeaders) { 
+			
+			this.result = obj;
+		}
+		
+		@Override
+	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
+			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
+	    }
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		private static final String[] SCOPES = {
+			GmailScopes.GMAIL_MODIFY,
+			GmailScopes.GMAIL_SEND
+	};
+
+
+	@Override
+	public List<String> listMessages(String executionGoogleUser, Date after, Date before, List<String> labelIds, List<String> labelsToIgnore, List<String> senderToIgnore) throws IOException, Exception {
+		
+		List<String> emailIds = new ArrayList<String>();
+		
+		getLogger().info("Retrieving email for user {} for time interval [{}, {}], labelIds {}, labelsToIgnore {}, senderToIgnore {}", executionGoogleUser, after, before, labelIds, labelsToIgnore, senderToIgnore);
+			
+		StringBuffer query = new StringBuffer();
+		
+		if(after != null) {
+			
+			query.append(String.format(" after:%d ",  millisToSeconds(after.getTime())));
+		}
+		
+		if(before != null) {
+				
+			query.append(String.format(" before:%d ",  millisToSeconds(before.getTime())));
+		}
+		
+		if(labelsToIgnore != null) {
+			
+			for(String label : labelsToIgnore) {
+				query.append(" -label:" + label);
+			}
+			
+		}
+		
+		if(senderToIgnore != null) {
+			
+			for(String sender : senderToIgnore) {
+				query.append(" -from:" + sender);
+			}
+		}
+		
+		getLogger().info("q={}", query);
+		
+		String nextPageToken = null;
+		do {
+			ListMessagesResponse response = getGmailService(executionGoogleUser).users().messages()
+					.list("me")
+					.setQ(query.toString())
+					.setLabelIds(labelIds)
+					.setPageToken(nextPageToken)
+					.execute();
+			
+			if(response.getMessages()!=null) {
+				for(Message message : response.getMessages()) {
+					emailIds.add(message.getId());
+				}
+			}
+			
+			nextPageToken = response.getNextPageToken();
+		} while (nextPageToken!=null);
+		
+		return emailIds;
+	}
+		
+	@Override
+	public Map<String, Message> retrieveMessageDetails(String executionGoogleUser, List<String> emailIds, String fields) throws IOException, Exception {
+		
+		final Map<String, Message> messages = new HashMap<String, Message>();
+				
+		List<List<String>> listOfList =  ListUtils.partition(emailIds, 10);
+
+		for(List<String> list : listOfList) {
+			
+			BatchRequest batchRequest = getGmailService(executionGoogleUser).batch();
+
+			for(final String emailId : list) {
+				
+				getGmailService(executionGoogleUser).users().messages()
+					.get("me", emailId)
+					.setFields(fields)
+					.queue(batchRequest, new JsonBatchCallback<Message>() {
+						@Override
+						public void onSuccess(Message message, HttpHeaders headers) throws IOException {
+							messages.put(emailId, message);
+						}
+						
+						@Override
+						public void onFailure(GoogleJsonError error, HttpHeaders headers) throws IOException {
+							getLogger().error("Error retrieving file details: {}", error.getMessage());
+						}
+					});
+								
+			}
+			
+			batchRequest.execute();
+		}
+		
+		return messages;
+	}
+
+	@Override
+	public GMailSearchMessagesByUidResponse searchMessagesByUid(String executionGoogleUser, List<String> messageUids) throws IOException, Exception {
+		
+		GMailSearchMessagesByUidResponse result = new GMailSearchMessagesByUidResponse();
+		
+//		getLogger().info("Searching messages for messageIds {}", messageUids);
+		
+		List<List<String>> listOfList =  ListUtils.partition(messageUids, 10);
+		
+		for(List<String> list : listOfList) {
+			
+			BatchRequest batchRequest = getGmailService(executionGoogleUser).batch();
+
+			for(final String messageId : list) {
+				
+				String query = String.format("rfc822msgid:%s", messageId);
+				
+				getGmailService(executionGoogleUser).users().messages()
+					.list("me")
+					.setQ(query)
+					.queue(batchRequest, new JsonBatchCallback<ListMessagesResponse>() {
+						@Override
+						public void onSuccess(ListMessagesResponse response, HttpHeaders headers) throws IOException {
+							if(response.getMessages()!=null && !response.getMessages().isEmpty()) {
+								result.getProcessed().put(messageId, response.getMessages().iterator().next());
+							} else {
+								getLogger().info("Message {} not found", messageId);
+							}
+						}
+
+						@Override
+						public void onFailure(GoogleJsonError error, HttpHeaders headers) throws IOException {
+							result.getFailed().add(messageId);
+							getLogger().error("Error retrieving file list: {}", error.getMessage());
+						}
+					});
+						
+			}
+			
+			batchRequest.execute();
+		}
+			
+		return result;
+	}
+
+	@Override
+	public GMailModifyMessageResponse modifyMessages(String executionGoogleUser, List<String> emailIds, List<String> addLabelIds, List<String> removeLabelIds) throws Exception, IOException {
+		
+		GMailModifyMessageResponse result = new GMailModifyMessageResponse();
+		
+		ModifyMessageRequest modifyRequest = new ModifyMessageRequest();
+		modifyRequest.setAddLabelIds(addLabelIds);
+		modifyRequest.setRemoveLabelIds(removeLabelIds);
+		
+		List<List<String>> listOfList =  ListUtils.partition(emailIds, 10);
+
+		for(List<String> list : listOfList) {
+			
+			BatchRequest batchRequest = getGmailService(executionGoogleUser).batch();
+
+			for(final String messageId : list) {
+				
+				getGmailService(executionGoogleUser).users().messages().modify("me", messageId, modifyRequest)
+				.queue(batchRequest, new JsonBatchCallback<Message>() {
+					@Override
+					public void onSuccess(Message message, HttpHeaders headers) throws IOException {
+						result.getProcessed().add(messageId);
+						getLogger().info("Message {} modified successfully", message.getId());
+					}
+					@Override
+					public void onFailure(GoogleJsonError error, HttpHeaders headers) throws IOException {
+						result.getFailed().add(messageId);
+						getLogger().error("Error modifying file {}: {}", messageId, error.getMessage());
+					}});
+			}
+			
+			batchRequest.execute();
+		}
+			
+		return result;
+	}
+	
+	@Override
+	public List<Label> listLabels(String executionGoogleUser) throws IOException, Exception {
+		ListLabelsResponse response = getGmailService(executionGoogleUser).users().labels().list("me").execute();
+		
+		return response.getLabels();
+	}
+	
+	private long millisToSeconds(long millis) {
+		return millis/1000;
+	}
+
+
+	@Override
+	public String createGmailLabel(String executionGoogleUser, String labelName) {
+
+		Label label = new Label();
+		
+		try {
+			
+			label.setName(labelName);
+			label.setLabelListVisibility("labelShow");
+			label.setMessageListVisibility("show");
+			
+			label = getGmailService(executionGoogleUser).users().labels().create(executionGoogleUser, label).execute();
+			
+		} catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		return label.getId();
+	}
+	
+	public String updateGmailLabel(String executionGoogleUser, String labelId, String newLabelName) {
+		
+		Label label = new Label();
+
+		try {
+			
+			label.setName(newLabelName);
+			label.setLabelListVisibility("labelShow");
+			label.setMessageListVisibility("show");
+			label.setId(labelId);
+			
+			label = getGmailService(executionGoogleUser).users().labels().update(executionGoogleUser, labelId, label).execute();
+			
+		} catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		return label.getId();
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		private static final String[] SCOPES = new String[] { DriveScopes.DRIVE, DriveScopes.DRIVE_FILE, DriveScopes.DRIVE_METADATA };
+
+
+@Override
+	public File uploadNewFile(String executionGoogleUser, InputStream fileData, String contentType, String fileName, List<String> folderIds, boolean keepRevisionForever, String fields) {
+		
+		File uploadedFile = null;
+		
+		try {
+			
+			File driveFileInfo = new File();
+			
+			if (StringUtils.isNotBlank(fileName)) {
+				driveFileInfo.setName(fileName);
+			}
+			
+			if (folderIds != null && !folderIds.isEmpty()) {
+				driveFileInfo.setParents(folderIds);
+			}
+			
+			getLogger().info("GDrive APIs - Uploading file ...");
+			
+			uploadedFile = getDriveService(executionGoogleUser).files().create(driveFileInfo, new InputStreamContent(contentType, fileData))
+					.setKeepRevisionForever(keepRevisionForever)
+					.setUseContentAsIndexableText(true)
+					.setFields(fields)
+					.setSupportsTeamDrives(true)
+					.execute();
+			
+			getLogger().info("GDrive APIs - File uploaded");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return uploadedFile;
+		
+	}
+	
+	@Override
+	public void updateFileMetadata(String executionGoogleUser, String fileId, String name, Set<String> addParentIds, Set<String> removeParentIds, Map<String, String> properties, Date lastModifyDatetime) {
+		
+		try {
+			
+			File driveFileInfo = new File();
+			
+			if (name != null) { 
+				driveFileInfo.setName(name);
+			}
+			
+			if (properties != null && !properties.isEmpty()) {
+				driveFileInfo.setProperties(properties);
+			}
+			
+			if (lastModifyDatetime != null) {
+				driveFileInfo.setModifiedTime(new DateTime(lastModifyDatetime.getTime()));
+			}
+			
+			
+			Update updateCommand = getDriveService(executionGoogleUser).files().update(fileId, driveFileInfo);
+			
+			if (addParentIds != null && !addParentIds.isEmpty()) {
+				updateCommand.setAddParents(StringUtils.join(addParentIds, ','));
+			}
+			
+			if (removeParentIds != null && !removeParentIds.isEmpty()) {
+				updateCommand.setRemoveParents(StringUtils.join(removeParentIds, ','));
+			}
+			
+			getLogger().info("GDrive APIs - Updating file metadata ...");
+			
+			driveFileInfo = updateCommand.setSupportsTeamDrives(true).execute();
+			
+			getLogger().info("GDrive APIs - File metadata updated.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public File copyFile(String executionGoogleUser, String fileId, String copyName, String mimeType, Set<String> copyParentIds, Map<String, String> properties, boolean writersCanShare, boolean keepRevisionForever, String fields) {
+		
+		File result = new File();
+		
+		try {
+			
+			File driveFileInfo = new File();
+			
+			driveFileInfo.setName(copyName);
+			
+			if (mimeType != null) {
+				driveFileInfo.setMimeType(mimeType);
+			}
+			
+			driveFileInfo.setParents(new ArrayList<String>(copyParentIds));
+			driveFileInfo.setWritersCanShare(writersCanShare);
+			
+			if (properties != null && !properties.isEmpty()) {
+				driveFileInfo.setProperties(properties);
+			}
+			
+			getLogger().info("GDrive APIs - Copying file ...");
+			
+			result = getDriveService(executionGoogleUser).files().copy(fileId, driveFileInfo)
+					.setKeepRevisionForever(keepRevisionForever)
+					.setFields(fields)
+					.execute();
+			
+			getLogger().info("GDrive APIs - File copied.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+		
+	}
+	
+	@Override
+	public String copyFileContentIntoANewFileRevision(String executionGoogleUser, String sourceFileId, String targetFileId, boolean keepRevisionForever) {
+		
+		String generatedRevisionId = null;
+		
+		GoogleDriveDocumentContent documentContent = downloadFileContent(executionGoogleUser, sourceFileId);
+		
+		try (InputStream documentContentData = documentContent.getData()) {
+			
+			getLogger().info("GDrive APIs - Copying content into a new file revision ...");
+			
+			File result = getDriveService(executionGoogleUser).files().update(targetFileId, null, new InputStreamContent(documentContent.getMimeType(), documentContentData))
+					.setKeepRevisionForever(keepRevisionForever)
+					.setUseContentAsIndexableText(true)
+					.setFields("headRevisionId")
+					.execute();
+			
+			generatedRevisionId = result.getHeadRevisionId();
+			
+			getLogger().info("GDrive APIs - Content copied into into a new file revision.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return generatedRevisionId;
+		
+	}
+	
+	@Override
+	public File getFileMetadata(String executionGoogleUser, String fileId, String fields) {
+		
+		File result = null;
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Retrieve file metadata ...");
+			
+			result = getDriveService(executionGoogleUser).files().get(fileId)
+					.setFields(fields)
+					.execute();
+			
+			getLogger().info("GDrive APIs - File metadata retrieved.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+		
+	}
+	
+	@Override
+	public FileList searchFiles(String executionGoogleUser, String fields, String orderBy, String query, Integer pageSize, String nextPageToken) {
+		
+		FileList result = null;
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Searching file ...");
+			
+			com.google.api.services.drive.Drive.Files.List listCommand = getDriveService(executionGoogleUser).files().list()
+					.setFields(fields)
+					.setOrderBy(orderBy)
+					.setQ(query);
+			
+			getLogger().info("GDrive APIs - File list retrieved.");
+			
+			if (pageSize != null) {
+				listCommand.setPageSize(pageSize);
+			}
+			
+			if (nextPageToken != null) {
+				listCommand.setPageToken(nextPageToken);
+			}
+			
+			result = listCommand.execute();
+		
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return result;
+		
+	}
+	
+	@Override
+	public String getFolderIdByNameAndParent(String executionGoogleUser, String parentId, String folderName) {
+		
+		String folderId = null;
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Searching folders ...");
+			
+			FileList result = getDriveService(executionGoogleUser).files().list()
+					.setQ("mimeType = 'application/vnd.google-apps.folder' and '" + parentId + "' in parents and name = '" + folderName + "' and trashed = false")
+					.setFields("files(id)")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Folders list retrieved.");
+			
+			if (!result.getFiles().isEmpty()) {
+				folderId = result.getFiles().get(0).getId();
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderId;
+		
+	}
+	
+	@Override
+	public Set<String> getSubFoldersIds(String executionGoogleUser, String parentId) {
+		
+		Set<String> folderIds = new HashSet<String>();
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Searching sub folders ...");
+			
+			FileList result = getDriveService(executionGoogleUser).files().list()
+					.setQ("mimeType = 'application/vnd.google-apps.folder' and '" + parentId + "' in parents and trashed = false")
+					.setFields("files(id)")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Sub folders list retrieved.");
+			
+			
+			for (File file : result.getFiles()) {
+				folderIds.add(file.getId());
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderIds;
+		
+	}
+	
+	@Override
+	public Set<String> getParentFoldersIds(String executionGoogleUser, String fileId) {
+		
+		Set<String> folderIds = new HashSet<String>();
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Retrieve parent folders ...");
+			
+			File file = getDriveService(executionGoogleUser).files().get(fileId)
+					.setFields("parents")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Parent folders list retrieved.");
+			
+			for (String parentId : file.getParents()) {
+				folderIds.add(parentId);
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderIds;
+		
+	}
+	
+	@Override
+	public void deleteFileById(String executionGoogleUser, String fileId) {
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Deleting file ...");
+			
+			getDriveService(executionGoogleUser).files().delete(fileId).execute();
+			
+			getLogger().info("GDrive APIs - File deleted.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public String createFolder(String executionGoogleUser, String name, List<String> parentIds) {
+		
+		String folderId = null;
+		
+		try {
+			
+			File driveFileInfo = new File();
+			
+			driveFileInfo.setName(name);
+			driveFileInfo.setMimeType("application/vnd.google-apps.folder");
+			
+			if (parentIds != null && !parentIds.isEmpty()) {
+				driveFileInfo.setParents(parentIds);
+			}
+			
+			getLogger().info("GDrive APIs - Creating folder ...");
+			
+			driveFileInfo = getDriveService(executionGoogleUser).files().create(driveFileInfo)
+					.setSupportsTeamDrives(true)
+					.setFields("id")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Folder created.");
+			
+			folderId = driveFileInfo.getId();
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderId;
+		
+	}
+	
+	@Override
+	public GoogleDriveDocumentContent downloadFileContent(String executionGoogleUser, String fileId) {
+		
+		GoogleDriveDocumentContent documentContent = new GoogleDriveDocumentContent();
+		
+		Drive driveService = getDriveService(executionGoogleUser);
+		
+		try {
+			
+			File gDriveFile = driveService.files()
+					.get(fileId)
+					.setFields("mimeType,name")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Downloading file content ...");
+			
+			InputStream gDriveFileData = driveService.files()
+					.get(fileId)
+					.executeMediaAsInputStream();
+			
+			getLogger().info("GDrive APIs - File content downloaded.");
+			
+			documentContent.setFileName(gDriveFile.getName());
+			documentContent.setMimeType(gDriveFile.getMimeType());
+			documentContent.setData(gDriveFileData);
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return documentContent;
+		
+	}
+	
+	@Override
+	public GoogleDriveDocumentContent downloadFileContentRevision(String executionGoogleUser, String fileId, String revisionId) {
+		
+		GoogleDriveDocumentContent documentContent = new GoogleDriveDocumentContent();
+		
+		Drive driveService = getDriveService(executionGoogleUser);
+		
+		try {
+			
+			Revision gDriveFileRevision = driveService.revisions()
+					.get(fileId, revisionId)
+					.setFields("mimeType")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Downloading file revision content ...");
+			
+			InputStream gDriveFileRevisionData = driveService.revisions()
+					.get(fileId, revisionId)
+					.executeMediaAsInputStream();
+			
+			getLogger().info("GDrive APIs - File revision content downloaded.");
+			
+			documentContent.setMimeType(gDriveFileRevision.getMimeType());
+			documentContent.setData(gDriveFileRevisionData);
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return documentContent;
+		
+	}
+	
+	@Override
+	public GoogleDriveDocumentContent downloadFileContentAsPDF(String executionGoogleUser, String fileId) {
+		
+		GoogleDriveDocumentContent documentContent = new GoogleDriveDocumentContent();
+		
+		String conversionMimeType = "application/pdf";
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Downloading file content in PDF format ...");
+			
+			InputStream gDriveFileData = getDriveService(executionGoogleUser).files()
+					.export(fileId, conversionMimeType)
+					.executeMediaAsInputStream();
+			
+			getLogger().info("GDrive APIs - File content as PDF format downloaded.");
+			
+			documentContent.setFileName(null);
+			documentContent.setMimeType(conversionMimeType);
+			documentContent.setData(gDriveFileData);
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return documentContent;
+		
+	}
+	
+	@Override
+	public PermissionList listFilePermissions(String executionGoogleUser, String fileId) {
+		
+		PermissionList drivePermissionsList = null;
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Retrieve file permission ...");
+			
+			drivePermissionsList = getDriveService(executionGoogleUser).permissions().list(fileId).setFields("*").execute();
+			
+			getLogger().info("GDrive APIs - File permissions retrieved.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return drivePermissionsList;
+		
+	}
+	
+	@Override
+	public void addFilePermissionToUser(String executionGoogleUser, String fileId, String userEMailAddress, String role) {
+		
+		try {
+			
+			Permission driveFilePermission = new Permission();
+			
+			driveFilePermission.setEmailAddress(userEMailAddress);
+			driveFilePermission.setType("user");
+			driveFilePermission.setRole(role);
+			
+			getLogger().info("GDrive APIs - Add file permission ...");
+			
+			getDriveService(executionGoogleUser).permissions().create(fileId, driveFilePermission).setSendNotificationEmail(false).execute();
+			
+			getLogger().info("GDrive APIs - Permission added to file.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public void addFilePermissionToGroup(String executionGoogleUser, String fileId, String groupEMailAddress, String role) {
+		
+		try {
+			
+			Permission driveFilePermission = new Permission();
+			
+			driveFilePermission.setEmailAddress(groupEMailAddress);
+			driveFilePermission.setType("group");
+			driveFilePermission.setRole(role);
+			
+			getLogger().info("GDrive APIs - Add file permission ...");
+			
+			getDriveService(executionGoogleUser).permissions().create(fileId, driveFilePermission).setSendNotificationEmail(false).execute();
+			
+			getLogger().info("GDrive APIs - Permission added to file.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public void updateFilePermission(String executionGoogleUser, String fileId, String permissionId, String role) {
+		
+		try {
+			
+			Permission driveFilePermission = new Permission();
+			driveFilePermission.setRole(role);
+			
+			getLogger().info("GDrive APIs - Update file permission ...");
+			
+			getDriveService(executionGoogleUser).permissions().update(fileId, permissionId, driveFilePermission).execute();
+			
+			getLogger().info("GDrive APIs - File permission updated.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public void removeFilePermission(String executionGoogleUser, String fileId, String permissionId) {
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Remove file permission ...");
+			
+			getDriveService(executionGoogleUser).permissions().delete(fileId, permissionId).execute();
+			
+			getLogger().info("GDrive APIs - File permission removed.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
+	@Override
+	public void publishLastFileRevision(String executionGoogleUser, String fileId, Boolean publishAuto, Boolean publishedOutsideDomain) {
+		
+		Drive driveService = getDriveService(executionGoogleUser);
+		
+		try {
+			
+			Revision driveFileRevision = new Revision();
+			driveFileRevision.setPublished(true);
+			
+			getLogger().info("GDrive APIs - Publishing last file revision ...");
+			
+			Revision publishResult = driveService.revisions().update(fileId, "head", driveFileRevision).execute();
+			
+			getLogger().info("GDrive APIs - Last file revision published.");
+			
+			if (publishAuto != null) {
+				
+				driveFileRevision = new Revision();
+				driveFileRevision.setPublishAuto(publishAuto);
+				
+				getLogger().info("GDrive APIs - Update 'publishAuto' property on last file revision ...");
+				
+				driveService.revisions().update(fileId, publishResult.getId(), driveFileRevision).execute();
+				
+				getLogger().info("GDrive APIs - Last file revision updated property 'publishAuto'.");
+				
+			}
+			
+			if (publishedOutsideDomain != null) {
+				
+				driveFileRevision = new Revision();
+				driveFileRevision.setPublishedOutsideDomain(publishedOutsideDomain);
+				
+				getLogger().info("GDrive APIs - Update 'publishedOutsideDomain' property on last file revision ...");
+				
+				/*
+				 * Attenzione - Lasciare le due chiamate - workaround dovuto a un BUG delle Google Drive REST API !!!
+				 */
+				
+				driveService.revisions().update(fileId, publishResult.getId(), driveFileRevision).execute();
+				driveService.revisions().update(fileId, publishResult.getId(), driveFileRevision).execute();
+				
+				getLogger().info("GDrive APIs - Last file revision updated property 'publishedOutsideDomain'.");
+				
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+
+
+	@Override
+	public String updateFileContentIntoANewFileRevision(String executionGoogleUser, String contentType,  InputStream fileData, String targetFileId,
+			boolean keepRevisionForever) {
+		String generatedRevisionId = null;
+		
+		try {
+			
+			getLogger().info("GDrive APIs - Copying content into a new file revision ...");
+			
+			File result = getDriveService(executionGoogleUser).files().update(targetFileId, null, new InputStreamContent(contentType, fileData))
+					.setKeepRevisionForever(keepRevisionForever)
+					.setUseContentAsIndexableText(true)
+					.setSupportsTeamDrives(true)
+					.setFields("headRevisionId")
+					.execute();
+			
+			generatedRevisionId = result.getHeadRevisionId();
+			
+			getLogger().info("GDrive APIs - Content copied into into a new file revision.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return generatedRevisionId;
+	}
+		
+	@Override
+	public void addFilePermissionToUserBatch(String executionGoogleUser, String fileId, Map<String,String> userEMailAddressRolesMap) {
+		if(userEMailAddressRolesMap == null || userEMailAddressRolesMap.isEmpty())
+			return;
+		
+		try {
+			getLogger().info("GDrive APIs - Add file permissions in batch mode...");
+			
+			BatchRequest batchRequest = getDriveService(executionGoogleUser).batch();
+			
+			for(String userEMailAddress : userEMailAddressRolesMap.keySet()) {
+				Permission driveFilePermission = new Permission();
+				
+				driveFilePermission.setEmailAddress(userEMailAddress);
+				driveFilePermission.setType("user");
+				driveFilePermission.setRole(userEMailAddressRolesMap.get(userEMailAddress));
+				
+				getDriveService(executionGoogleUser).permissions().create(fileId, driveFilePermission).setSendNotificationEmail(false).queue(batchRequest, new BatchGoogleCallback());;
+			}
+			
+			batchRequest.execute();
+			
+			getLogger().info("GDrive APIs - Permissions added to file in batch mode.");
+
+	
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@Override
+	public void updateFilePermissionBatch(String executionGoogleUser, String fileId, Map<String,String> permissionIdsRolesMap) {
+		if(permissionIdsRolesMap == null || permissionIdsRolesMap.isEmpty())
+			return;
+		
+		try {	
+			getLogger().info("GDrive APIs - Update files permissions in batch mode...");
+			
+			BatchRequest batchRequest = getDriveService(executionGoogleUser).batch();
+			
+			for(String permissionId : permissionIdsRolesMap.keySet()) {
+				Permission driveFilePermission = new Permission();
+				driveFilePermission.setRole(permissionIdsRolesMap.get(permissionId));
+				
+				getDriveService(executionGoogleUser).permissions().update(fileId, permissionId, driveFilePermission).queue(batchRequest, new BatchGoogleCallback());
+			}
+			
+			batchRequest.execute();
+			
+			getLogger().info("GDrive APIs - Permissions file updated in batch mode.");
+									
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@Override
+	public void removeFilePermissionBatch(String executionGoogleUser, String fileId, List<String> permissionIds) {
+		if(permissionIds == null || permissionIds.isEmpty())
+			return;
+		
+		try {
+			getLogger().info("GDrive APIs - Remove file permissions in batch mode ...");
+			
+			BatchRequest batchRequest = getDriveService(executionGoogleUser).batch();
+			
+			for(String permissionId : permissionIds) {
+				
+				getDriveService(executionGoogleUser).permissions().delete(fileId, permissionId).queue(batchRequest, 
+					new JsonBatchCallback<Void>() {
+
+				      @Override
+				      public void onSuccess(Void content, HttpHeaders responseHeaders) { }
+
+				      @Override
+				      public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
+				    	  getLogger().error("GDrive APIs - Error Message in Batch delete on permission: " + e.getMessage());
+				      }
+				      
+				 });
+				
+			}
+			
+			batchRequest.execute();
+			
+			getLogger().info("GDrive APIs - File permissions removed in batch mode.");
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@Override
+	public String createFolderIfNotExistsByName(String executionGoogleUser, String parentId, String folderName) {
+
+		String folderId = null;
+		
+		Drive driveService = getDriveService(executionGoogleUser);
+		
+		try {
+			
+			String query = "mimeType='application/vnd.google-apps.folder' and '" + parentId +  "' in parents and name = '" + folderName + "' and trashed = false";
+			
+			getLogger().info("GDrive APIs - Searching folder by name: {} ", query);
+			
+			FileList foundFolderList = driveService.files().list()
+					.setQ(query)
+					.setSpaces("drive")
+					.setFields("files(id)")
+					.execute();
+			
+			if (foundFolderList.getFiles().isEmpty()) {
+				
+				folderId = createFolderInternal(driveService, folderName, Arrays.asList(parentId));
+				
+			} else {
+				getLogger().info("GDrive APIs - Folder {} found by name.", folderName);
+				folderId = foundFolderList.getFiles().get(0).getId();
+			}
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderId;
+	}
+	
+	@Override
+	public String createFolderIfNotExistsByNameInTeamDrive(String executionGoogleUser, String folderName, String teamDriveId) {
+		
+		String folderId = null;
+		
+		Drive driveService = getDriveService(executionGoogleUser);
+		
+		try {
+			
+			String query = "mimeType='application/vnd.google-apps.folder' and name = '" + folderName + "' and trashed = false";
+			
+			getLogger().info("GDrive APIs - Searching folder by name: {} ", query);
+			
+			FileList foundFolderList = driveService.files().list()
+					.setQ(query)
+					.setIncludeTeamDriveItems(true)
+					.setSupportsTeamDrives(true)
+					.setTeamDriveId(teamDriveId)
+					.setCorpora("teamDrive")
+					.setSpaces("drive")
+					.setFields("files(id)")
+					.execute();
+			
+			if (foundFolderList.getFiles().isEmpty()) {
+				
+				folderId = createFolderInternal(driveService, folderName, Arrays.asList(teamDriveId));
+				
+			} else {
+				getLogger().info("GDrive APIs - Folder {} found by name.", folderName);
+				folderId = foundFolderList.getFiles().get(0).getId();
+			}
+		
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	
+		return folderId;
+		
+	}
+	
+	private String createFolderInternal(Drive driveService, String name, List<String> parentIds) {
+		String folderId = null;
+		
+		try {
+			
+			File driveFileInfo = new File();
+			
+			driveFileInfo.setName(name);
+			driveFileInfo.setMimeType("application/vnd.google-apps.folder");
+			
+			if (parentIds != null && !parentIds.isEmpty()) {
+				driveFileInfo.setParents(parentIds);
+			}
+			
+			getLogger().info("GDrive APIs - Creating folder {}...", name);
+			
+			driveFileInfo = driveService.files().create(driveFileInfo)
+					.setSupportsTeamDrives(true)
+					.setFields("id")
+					.execute();
+			
+			getLogger().info("GDrive APIs - Folder {} created.", name);
+			
+			folderId = driveFileInfo.getId();
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
+		return folderId;
+	}
+		
+	//Batch Callback object
+	class BatchGoogleCallback extends JsonBatchCallback<Permission> {
+		@Override
+		  public void onSuccess(Permission permission, HttpHeaders responseHeaders) { }
+		
+		@Override
+        public void onFailure(GoogleJsonError  e, HttpHeaders responseHeaders) {
+			getLogger().error("GDrive APIs - Error Message in Batch operation on permission: " + e.getMessage());
+        }
+	}
