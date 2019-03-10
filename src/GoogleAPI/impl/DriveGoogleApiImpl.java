@@ -14,15 +14,15 @@ import java.util.Set;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.services.json.AbstractGoogleJsonClient;
 import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.JsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.Drive.Files.Update;
@@ -55,9 +55,8 @@ public class DriveGoogleApiImpl extends AbstractBaseGoogleApi implements DriveGo
 	}
 
 	@Override
-	protected AbstractGoogleJsonClient buildGoogleService(HttpTransport httpTransport, JacksonFactory jacksonFactory,
-			Credential credential) {
-		return new Drive(httpTransport, jacksonFactory, credential);
+	protected AbstractGoogleJsonClient buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer) {
+		return new Drive(httpTransport, jacksonFactory, requestInitializer);
 	}
 	
 	private Drive getDriveGoogleService(String executionGoogleUser) {
@@ -108,7 +107,7 @@ public class DriveGoogleApiImpl extends AbstractBaseGoogleApi implements DriveGo
 	}
 	
 	@Override
-	public void updateFileMetadata(String executionGoogleUser, String fileId, String name, Set<String> addParentIds, Set<String> removeParentIds, Map<String, String> properties, Date lastModifyDatetime) {
+	public void editFileMetadata(String executionGoogleUser, String fileId, String name, Set<String> addParentIds, Set<String> removeParentIds, Map<String, String> properties, Date lastModifyDatetime) {
 		
 		try {
 			
@@ -301,34 +300,7 @@ public class DriveGoogleApiImpl extends AbstractBaseGoogleApi implements DriveGo
 		return folderIds;
 		
 	}
-	
-	@Override
-	public Set<String> getParentFoldersIds(String executionGoogleUser, String fileId) {
 		
-		Set<String> folderIds = new HashSet<String>();
-		
-		try {
-			
-			getLogger().info("GDrive APIs - Retrieve parent folders ...");
-			
-			File file = getDriveGoogleService(executionGoogleUser).files().get(fileId)
-					.setFields("parents")
-					.execute();
-			
-			getLogger().info("GDrive APIs - Parent folders list retrieved.");
-			
-			for (String parentId : file.getParents()) {
-				folderIds.add(parentId);
-			}
-			
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		
-		return folderIds;
-		
-	}
-	
 	@Override
 	public void deleteFileById(String executionGoogleUser, String fileId) {
 		

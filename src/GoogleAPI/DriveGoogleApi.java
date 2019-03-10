@@ -14,7 +14,7 @@ public interface DriveGoogleApi {
 
 	public File uploadNewFile(String executionGoogleUser, InputStream fileData, String contentType, String fileName, List<String> folderIds, boolean keepRevisionForever, String fields);
 	
-	public void updateFileMetadata(String executionGoogleUser, String fileId, String name, Set<String> addParentIds, Set<String> removeParentIds, Map<String, String> properties, Date lastModifyDatetime);
+	public void editFileMetadata(String executionGoogleUser, String fileId, String name, Set<String> addParentIds, Set<String> removeParentIds, Map<String, String> properties, Date lastModifyDatetime);
 	
 	public File copyFile(String executionGoogleUser, String fileId, String copyName, String mimeType, Set<String> copyParentIds, Map<String, String> properties, boolean writersCanShare, boolean keepRevisionForever, String fields);
 		
@@ -25,9 +25,7 @@ public interface DriveGoogleApi {
 	public String getFolderIdByNameAndParent(String executionGoogleUser, String parentId, String folderName);
 	
 	public Set<String> getSubFoldersIds(String executionGoogleUser, String parentId);
-	
-	public Set<String> getParentFoldersIds(String executionGoogleUser, String fileId);
-	
+		
 	public void deleteFileById(String executionGoogleUser, String fileId);
 	
 	public void trashFilesByIds(String executionGoogleUser, List<String> fileIds);

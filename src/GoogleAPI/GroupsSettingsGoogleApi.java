@@ -6,6 +6,6 @@ import com.google.api.services.groupssettings.model.Groups;
 
 public interface GroupsSettingsGoogleApi {
 
-	public List<Groups> getGroupSettingsbyEmails(String executionGoogleUser, List<String> emails, String fields);
+	public List<Groups> getGroupSettings(String executionGoogleUser, List<String> emails, String fields);
 
 }

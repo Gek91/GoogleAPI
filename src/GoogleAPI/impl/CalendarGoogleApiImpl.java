@@ -5,14 +5,11 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
-import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.services.json.AbstractGoogleJsonClient;
-import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.JsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
@@ -39,9 +36,8 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi implements Cale
 	}
 
 	@Override
-	protected AbstractGoogleJsonClient buildGoogleService(HttpTransport httpTransport, JacksonFactory jacksonFactory,
-			Credential credential) {
-		return new Calendar(httpTransport, jacksonFactory, credential);
+	protected AbstractGoogleJsonClient buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer) {
+		return new Calendar(httpTransport, jacksonFactory, requestInitializer);
 	}
 		
 	private Calendar getCalendarGoogleService(String executionGoogleUser) {
@@ -63,34 +59,40 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi implements Cale
 		
 		try {
 			
-			getLogger().info("Calendar APIs - retrieve calendar Acl for calendar {} and nextPageToken {}..", calendarEmail, nextPageToken);
+			getLogger().info("Calendar APIs - START getCalendarAcl | calendarId:{} nextPageToken:{}.", calendarEmail, nextPageToken);
 
-			result = getCalendarGoogleService(executionGoogleUser).acl()
-						.list(calendarEmail)
-						.setFields(fields)
-						.setPageToken(nextPageToken)
-						.execute();
+			result = getCalendarGoogleService(executionGoogleUser)
+					.acl()
+					.list(calendarEmail)
+					.setFields(fields)
+					.setPageToken(nextPageToken)
+					.execute();
 			
-			getLogger().info("Calendar APIs - end retrieving calendar Acl for calenda {}.", calendarEmail);
-
+			getLogger().info("Calendar APIs - END getCalendarAcl.");
+			
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("Calendar APIs - Google service error in getCalendarAcl.");
+			handleServiceException(e);
 			
 		}  catch(Exception e) {
-			getLogger().error("Error retrieving resource acl", e);
+			getLogger().error("Calendar APIs - Critical error in getCalendarAcl.", e);
 			throw new RuntimeException(e);
 		}
 		
 		return result;
 	}
 
+	@Override
 	public Events getCalendarEvents(String executionGoogleUser, String calendarEmail, Date timeMin, Date timeMax, String fields, String nextPageToken) {
 		
 		Events result = null;
 		
 		try {
 			
-			getLogger().info("Calendar APIs - retrieve calendar {} events...", calendarEmail);
+			getLogger().info("Calendar APIs - START getCalendarEvents | calendarId:{}.", calendarEmail);
 			
-			Calendar.Events.List list = getCalendarGoogleService(executionGoogleUser).events()
+			Calendar.Events.List list = getCalendarGoogleService(executionGoogleUser)
+					.events()
 					.list(calendarEmail)
 					.setFields(fields)
 					.setSingleEvents(true)
@@ -109,10 +111,14 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi implements Cale
 			
 			result = list.execute();
 			
-			getLogger().info("Calendar APIs - end retrieving calendar {} events.", calendarEmail);
+			getLogger().info("Calendar APIs - END getCalendarEvents");
+			
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("Calendar APIs - Google service error in getCalendarEvents.");
+			handleServiceException(e);
 			
 		}  catch(Exception e) {
-			getLogger().error("Error retrieving calendar events", e);
+			getLogger().error("Calendar APIs - Critical error in getCalendarEvents.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -126,27 +132,22 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi implements Cale
 		
 		try {
 			
-			getLogger().info("Calendar APIs - retrieving calendar event {}...", eventId);
+			getLogger().info("Calendar APIs - START executionGoogleUser | calendarId:{} eventId {}.", calendarEmail, eventId);
 
-			result = getCalendarGoogleService(executionGoogleUser).events()
-				.get(calendarEmail, eventId)
-				.setFields(fields)
-				.execute();
+			result = getCalendarGoogleService(executionGoogleUser)
+					.events()
+					.get(calendarEmail, eventId)
+					.setFields(fields)
+					.execute();
 			
-			getLogger().info("Calendar APIs - end retrieving calendar event {}.", eventId);
-		} catch(GoogleJsonResponseException  e) {
+			getLogger().info("Calendar APIs - END executionGoogleUser.");
 			
-			if(e.getStatusCode() == 404) {
-				getLogger().error("Calendar event not found", e);
-			} else if (e.getStatusCode() == 503) {
-				getLogger().error("Calendar or event permission error", e);
-			}
-			
-			getLogger().error("Error retrieving calendar event", e);
-			throw new RuntimeException(e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("Calendar APIs - Google service error in executionGoogleUser.");
+			handleServiceException(e);
 			
 		}  catch(Exception e) {
-			getLogger().error("Error retrieving calendar event", e);
+			getLogger().error("Calendar APIs - Critical error in executionGoogleUser.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -158,52 +159,22 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi implements Cale
 		
 		try {
 			
-			getLogger().info("Calendar APIs - delete calendar event {}...", eventId);
+			getLogger().info("Calendar APIs - START deleteEvent | calendarId:{} eventId {}.", calendarEmail, eventId);
 			
-			getCalendarGoogleService(executionGoogleUser).events()
+			getCalendarGoogleService(executionGoogleUser)
+				.events()
 				.delete(calendarEmail, eventId);
 			
-			getLogger().info("Calendar APIs - end deleting calendar event {}.", eventId);
-		}  catch(GoogleJsonResponseException  e) {
+			getLogger().info("Calendar APIs - END deleteEvent.");
 			
-			if(e.getStatusCode() == 404) {
-				getLogger().error("Calendar event not found", e);
-			} else if (e.getStatusCode() == 503) {
-				getLogger().error("Calendar or event permission error", e);
-			}
-			
-			getLogger().error("Error retrieving calendar event", e);
-			throw new RuntimeException(e); 
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("Calendar APIs - Google service error in executionGoogleUser.");
+			handleServiceException(e);
 			
 		}  catch(Exception e) {
-			getLogger().error("Error deleting calendar event", e);
+			getLogger().error("Calendar APIs - Critical error in executionGoogleUser.", e);
 			throw new RuntimeException(e);
 		}
-	}
-
-
-	class BatchEventsGoogleCallback extends JsonBatchCallback<Events> {
-		
-		private Events result;
-				
-		public Events getResult() {
-			return result;
-		}
-
-		public void setResult(Events result) {
-			this.result = result;
-		}
-
-		@Override
-		  public void onSuccess(Events obj, HttpHeaders responseHeaders) { 
-			
-			this.result = obj;
-		}
-		
-		@Override
-	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
-			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
-	    }
 	}
 
 }

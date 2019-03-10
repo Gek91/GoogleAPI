@@ -6,13 +6,11 @@ import java.util.List;
 
 import org.apache.commons.collections4.ListUtils;
 
-import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.batch.BatchRequest;
-import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
-import com.google.api.client.googleapis.json.GoogleJsonError;
-import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.JsonFactory;
 import com.google.api.services.admin.directory.Directory;
 import com.google.api.services.admin.directory.DirectoryScopes;
 import com.google.api.services.admin.directory.model.Buildings;
@@ -26,6 +24,7 @@ import com.google.api.services.admin.directory.model.Users;
 import GoogleAPI.DirectoryGoogleApi;
 import GoogleAPI.util.AbstractBaseGoogleApi;
 import GoogleAPI.util.AbstractBaseGoogleAuthentication;
+import GoogleAPI.util.BasicBatchCallBack;
 
 
 
@@ -46,9 +45,8 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 
 	@Override
-	protected Directory buildGoogleService(HttpTransport httpTransport, JacksonFactory jacksonFactory,
-			Credential credential) {
-		return new Directory(HTTP_TRANSPORT, JSON_FACTORY, credential);
+	protected Directory buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer) {
+		return new Directory(HTTP_TRANSPORT, JSON_FACTORY, requestInitializer);
 	}
 	
 	private Directory getDirectoryGoogleService(String executionGoogleUser) {
@@ -63,23 +61,28 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	@Override
-	public Group getGroupByEmail(String executionGoogleUser, String email, String fields) {
+	public Group getGroup(String executionGoogleUser, String email, String fields) {
 		
 		Group result = null;
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve group by email {}...", email);
+			getLogger().info("GSuite Admin APIs - START getGroup | email:{}.", email);
 
-			result = getDirectoryGoogleService(executionGoogleUser).groups()
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.groups()
 					.get(email)
 					.setFields(fields)
 					.execute();
 			
-			getLogger().info("GSuite Admin APIs - end retrieving group by email {}.", email);
-
+			getLogger().info("GSuite Admin APIs - END getGroup.");
+			
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getGroup.");
+			handleServiceException(e);
+			
 		}  catch(Exception e) {
-			getLogger().error("Error in retrieving group", e);
+			getLogger().error("GSuite Admin APIs - Critical error in getGroup.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -88,24 +91,30 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 
 
 	@Override
-	public Groups getDomainGroupsList(String executionGoogleUser, String domain, String nextPageToken, String fields) {
+	public Groups getDomainGroups(String executionGoogleUser, String domain, String nextPageToken, String fields) {
 		
 		Groups result = null;
 
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve groups list for domain {} and nextPageToken {}..", domain, nextPageToken);
+			getLogger().info("GSuite Admin APIs - START getDomainGroups | domain:{} nextPageToken:{}.", domain, nextPageToken);
 									
-			result = getDirectoryGoogleService(executionGoogleUser).groups().list()
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.groups()
+					.list()
 					.setDomain(domain)
 					.setPageToken(nextPageToken)
 					.setFields(fields)
 					.execute();
 					
-			getLogger().info("GSuite Admin APIs - end retrieving groups list for domain {}.", domain);
+			getLogger().info("GSuite Admin APIs - END getDomainGroups.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving groups list", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getDomainGroups.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getDomainGroups.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -113,24 +122,30 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 
 	@Override
-	public Users getDomainUsersList(String executionGoogleUser, String domain, String nextPageToken, String fields) {
+	public Users getDomainUsers(String executionGoogleUser, String domain, String nextPageToken, String fields) {
 		
 		Users result = null;
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve users list for domain {} and nextPageToken {}...", domain, nextPageToken);
+			getLogger().info("GSuite Admin APIs - START getDomainUsers | domain:{} nextPageToken:{}.", domain, nextPageToken);
 				
-			result = getDirectoryGoogleService(executionGoogleUser).users().list()
-						.setDomain(domain)
-						.setPageToken(nextPageToken)
-						.setFields(fields)
-						.execute();
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.users()
+					.list()					
+					.setDomain(domain)
+					.setPageToken(nextPageToken)
+					.setFields(fields)
+					.execute();
 			
-			getLogger().info("GSuite Admin APIs - end retrieving users list for domain {}.", domain);
+			getLogger().info("GSuite Admin APIs - END getDomainUsers.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving groups list", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getDomainUsers.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getDomainUsers.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -138,33 +153,30 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 	
 	@Override
-	public List<Group> listUserGroups(String executionGoogleUser, String userId, String fields) {
+	public Groups getUserGroups(String executionGoogleUser, String userId, String nextPageToken, String fields) {
 		
-		List<Group> result = new ArrayList<Group>();
+		Groups result = null;
 		
 		try {
 		
-			getLogger().info("GSuite Admin APIs - retrieve groups list for user {}...", userId);
-			
-			Groups groups = null;
-			
-			String nextPageToken = null;
-			
-			do {
-				groups = getDirectoryGoogleService(executionGoogleUser).groups().list()
-						.setUserKey(userId)
-						.setPageToken(nextPageToken)
-						.setFields(fields)
-						.execute();
-	
-				result.addAll(groups.getGroups());
-				
-			} while(groups.getNextPageToken() != null) ;
+			getLogger().info("GSuite Admin APIs - START getUserGroups | userId:{}.", userId);
+					
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.groups()
+					.list()
+					.setUserKey(userId)
+					.setPageToken(nextPageToken)
+					.setFields(fields)
+					.execute();
 		
-			getLogger().info("GSuite Admin APIs - end retrieving groups list for user {}.", userId);
+			getLogger().info("GSuite Admin APIs - END getUserGroups.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving groups list", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getUserGroups.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getUserGroups.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -172,24 +184,29 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 	
 	@Override
-	public Members getGroupUsersList(String executionGoogleUser, String groupId, String nextPageToken, String fields) {
+	public Members getGroupMembers(String executionGoogleUser, String groupId, String nextPageToken, String fields) {
 		
 		Members result = null;
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve group {} members and nextPageToken {}...", groupId, nextPageToken);
+			getLogger().info("GSuite Admin APIs - START getGroupMembers | group:{} nextPageToken:{}.", groupId, nextPageToken);
 						
-			result = getDirectoryGoogleService(executionGoogleUser).members()
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.members()
 					.list(groupId)
 					.setFields(fields)
 					.setPageToken(nextPageToken)
 					.execute();
 						
-			getLogger().info("GSuite Admin APIs - end retrieving group {} members.", groupId);
+			getLogger().info("GSuite Admin APIs - END getGroupMembers.");
 
-		} catch(Exception e) {
-			getLogger().error("Error retrieving group members", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getGroupMembers.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getGroupMembers.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -203,18 +220,24 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve calendar resources with customer id {} and nextPageToken {}...", customerId, nextPageToken);
+			getLogger().info("GSuite Admin APIs - START getCalendarResources | customerId:{} nextPageToken:{}.", customerId, nextPageToken);
 
-			result = getDirectoryGoogleService(executionGoogleUser).resources().calendars()
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.resources()
+					.calendars()
 					.list(customerId)
 					.setFields(fields)
 					.setPageToken(nextPageToken)
 					.execute();
 			
-			getLogger().info("GSuite Admin APIs - end retrieving calendar resources with customer id {}.", customerId);
+			getLogger().info("GSuite Admin APIs - END getCalendarResources.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving calendar resources", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getCalendarResources.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getCalendarResources.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -222,24 +245,30 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 
 	@Override
-	public Buildings getResourceBuildingList(String executionGoogleUser, String customerId, String nextPageToken, String fields) {
+	public Buildings getResourceBuildings(String executionGoogleUser, String customerId, String nextPageToken, String fields) {
 		
 		Buildings result = null;
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve building resources with customer id {} and nextPageToken {}...", customerId, nextPageToken);
+			getLogger().info("GSuite Admin APIs - START getResourceBuildings | customerId:{} nextPageToken:{}.", customerId, nextPageToken);
 
-			result = getDirectoryGoogleService(executionGoogleUser).resources().buildings()
+			result = getDirectoryGoogleService(executionGoogleUser)
+					.resources()
+					.buildings()
 					.list(customerId)
 					.setFields(fields)
 					.setPageToken(nextPageToken)
 					.execute();
 			
-			getLogger().info("GSuite Admin APIs - end retrieving building resources with customer id {}.", customerId);
+			getLogger().info("GSuite Admin APIs - END getResourceBuildings.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving building resources", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getResourceBuildings.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getResourceBuildings.", e);
 			throw new RuntimeException(e);
 		}
 		
@@ -247,17 +276,17 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 	
 	@Override
-	public List<User> getUsersDetails(String executionGoogleUser, List<String> userids, String fields) {
-		if(userids == null)
+	public List<User> getUsersDetail(String executionGoogleUser, List<String> userIds, String fields) {
+		if(userIds == null || userIds.isEmpty())
 			return null;
 		
-		List<BatchUserGoogleCallback> callbacks = new ArrayList<BatchUserGoogleCallback>();
+		BasicBatchCallBack<User> callback = new BasicBatchCallBack<>(new ArrayList<User>());
 		
 		try {
 			
-			getLogger().info("GSuite Admin APIs - retrieve users detail batch...");
+			getLogger().info("GSuite Admin APIs - START BATCH getUsersDetail");
 
-			List<List<String>> listOfList = ListUtils.partition(userids, 50);
+			List<List<String>> listOfList = ListUtils.partition(userIds, 50);
 			
 			int i = 0;
 			for(List<String> list : listOfList) {
@@ -265,84 +294,30 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 				BatchRequest batchRequest = getDirectoryGoogleService(executionGoogleUser).batch();
 
 				for(String id : list) {
-					
-					BatchUserGoogleCallback callback = new BatchUserGoogleCallback();
-					
-					getDirectoryGoogleService(executionGoogleUser).users()
+										
+					getDirectoryGoogleService(executionGoogleUser)
+						.users()
 						.get(id)
 						.setFields(fields)
 						.queue(batchRequest, callback);
-
-					callbacks.add(callback);
 				}
 				
-				getLogger().info("Executing {}° batch request", (i+1)+"");
+				getLogger().info("GSuite Admin APIs - Executing {}° batch request", (i+1)+"");
 				batchRequest.execute();
 				i++;
 			}
 			
-			getLogger().info("GSuite Admin APIs - end retrieving users detail batch.");
+			getLogger().info("GSuite Admin APIs - END BATCH getUsersDetail.");
 			
-		} catch(Exception e) {
-			getLogger().error("Error retrieving group members", e);
+		} catch(GoogleJsonResponseException e) {
+			getLogger().error("GSuite Admin APIs - Google service error in getUsersDetail.");
+			handleServiceException(e);
+			
+		}  catch(Exception e) {
+			getLogger().error("GSuite Admin APIs - Critical error in getUsersDetail.", e);
 			throw new RuntimeException(e);
 		}
 		
-		List<User> result = new ArrayList<User>();
-		for(BatchUserGoogleCallback callback : callbacks) {
-			
-			if(callback.getResult() != null){
-				result.add(callback.getResult());
-			}
-		}
-		
-		return result;
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//Callback
-
-	class BatchUserGoogleCallback extends JsonBatchCallback<User> {
-		
-		private User result;
-				
-		public User getResult() {
-			return result;
-		}
-
-		public void setResult(User result) {
-			this.result = result;
-		}
-
-		@Override
-		  public void onSuccess(User obj, HttpHeaders responseHeaders) { 
-			
-			this.result = obj;
-		}
-		
-		@Override
-	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
-			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
-	    }
-	}
-	
-	class BatchGroupsGoogleCallback extends JsonBatchCallback<Groups> {
-		
-		private Groups result;
-		
-		public Groups getResult() {
-			return result;
-		}
-		
-		@Override
-		  public void onSuccess(Groups obj, HttpHeaders responseHeaders) { 
-			
-			this.result = obj;
-		}
-		
-		@Override
-	    public void onFailure(GoogleJsonError e, HttpHeaders responseHeaders) {
-			getLogger().error("GDrive APIs - Error Message in Batch operation : " + e.getMessage());
-	    }
-	}
+		return (List<User>) callback.getEntities();
+	}	
 }
