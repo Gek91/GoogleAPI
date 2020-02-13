@@ -1,4 +1,4 @@
-package GoogleAPI.util;
+package main.GoogleAPI.auth;
 import java.io.FileReader;
 import java.util.Collection;
 
@@ -10,6 +10,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+
+import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
 	
 public class BaseGoogleApiLocalInstallationAuth extends AbstractBaseGoogleAuthentication {
 

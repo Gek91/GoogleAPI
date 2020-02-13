@@ -1,12 +1,9 @@
-package GoogleAPI.impl;
+package main.GoogleAPI.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.collections4.ListUtils;
-
-import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
@@ -21,14 +18,14 @@ import com.google.api.services.admin.directory.model.Members;
 import com.google.api.services.admin.directory.model.User;
 import com.google.api.services.admin.directory.model.Users;
 
-import GoogleAPI.DirectoryGoogleApi;
-import GoogleAPI.util.AbstractBaseGoogleApi;
-import GoogleAPI.util.AbstractBaseGoogleAuthentication;
-import GoogleAPI.util.BasicBatchCallBack;
+import main.GoogleAPI.DirectoryGoogleApi;
+import main.GoogleAPI.common.AbstractBaseGoogleApi;
+import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest;
 
 
 
-public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements DirectoryGoogleApi {
+public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi<Directory> implements DirectoryGoogleApi {
 
 	private static final List<String> SCOPES = new ArrayList<String>() {
 		private static final long serialVersionUID = 1L;
@@ -50,7 +47,7 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 	
 	private Directory getDirectoryGoogleService(String executionGoogleUser) {
-		return (Directory) getGoogleService(executionGoogleUser);
+		return getGoogleService(executionGoogleUser);
 	}
 	
 	//constructor
@@ -276,48 +273,54 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi implements Dir
 	}
 	
 	@Override
-	public List<User> getUsersDetail(String executionGoogleUser, List<String> userIds, String fields) {
-		if(userIds == null || userIds.isEmpty())
+	public List<User> getUsersDetail(String executionGoogleUser, List<String> userIds, String fields, boolean ignoreEntityFailure) {
+//		if(userIds == null || userIds.isEmpty())
 			return null;
 		
-		BasicBatchCallBack<User> callback = new BasicBatchCallBack<>(new ArrayList<User>());
-		
-		try {
-			
-			getLogger().info("GSuite Admin APIs - START BATCH getUsersDetail");
+//		BasicBatchCallBack<User> callback = new BasicBatchCallBack<>(new ArrayList<User>(), ignoreEntityFailure);
+//		
+//		try {
+//			
+//			getLogger().info("GSuite Admin APIs - START BATCH getUsersDetail");
+//
+//			List<List<String>> listOfList = ListUtils.partition(userIds, 50);
+//			
+//			int i = 0;
+//			for(List<String> list : listOfList) {
+//				
+//				BatchRequest batchRequest = getDirectoryGoogleService(executionGoogleUser).batch();
+//
+//				for(String id : list) {
+//										
+//					getDirectoryGoogleService(executionGoogleUser)
+//						.users()
+//						.get(id)
+//						.setFields(fields)
+//						.queue(batchRequest, callback);
+//				}
+//				
+//				getLogger().info("GSuite Admin APIs - Executing {}° batch request", (i+1)+"");
+//				batchRequest.execute();
+//				i++;
+//			}
+//			
+//			getLogger().info("GSuite Admin APIs - END BATCH getUsersDetail.");
+//			
+//		} catch(GoogleJsonResponseException e) {
+//			getLogger().error("GSuite Admin APIs - Google service error in getUsersDetail.");
+//			handleServiceException(e);
+//			
+//		}  catch(Exception e) {
+//			getLogger().error("GSuite Admin APIs - Critical error in getUsersDetail.", e);
+//			throw new RuntimeException(e);
+//		}
+//		
+//		return (List<User>) callback.getEntities();
+	}
 
-			List<List<String>> listOfList = ListUtils.partition(userIds, 50);
-			
-			int i = 0;
-			for(List<String> list : listOfList) {
-				
-				BatchRequest batchRequest = getDirectoryGoogleService(executionGoogleUser).batch();
-
-				for(String id : list) {
-										
-					getDirectoryGoogleService(executionGoogleUser)
-						.users()
-						.get(id)
-						.setFields(fields)
-						.queue(batchRequest, callback);
-				}
-				
-				getLogger().info("GSuite Admin APIs - Executing {}° batch request", (i+1)+"");
-				batchRequest.execute();
-				i++;
-			}
-			
-			getLogger().info("GSuite Admin APIs - END BATCH getUsersDetail.");
-			
-		} catch(GoogleJsonResponseException e) {
-			getLogger().error("GSuite Admin APIs - Google service error in getUsersDetail.");
-			handleServiceException(e);
-			
-		}  catch(Exception e) {
-			getLogger().error("GSuite Admin APIs - Critical error in getUsersDetail.", e);
-			throw new RuntimeException(e);
-		}
-		
-		return (List<User>) callback.getEntities();
+	@Override
+	protected AbstractGoogleServiceBatchRequest<Directory> getBatchBuilder(String executionGoogleUser) {
+		// TODO Auto-generated method stub
+		return null;
 	}	
 }

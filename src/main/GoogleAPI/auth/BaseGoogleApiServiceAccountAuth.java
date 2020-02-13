@@ -1,4 +1,4 @@
-package GoogleAPI.util;
+package main.GoogleAPI.auth;
 
 import java.io.FileInputStream;
 import java.util.Collection;
@@ -7,6 +7,8 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
+
+import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
 
 public class BaseGoogleApiServiceAccountAuth extends AbstractBaseGoogleAuthentication {
 	

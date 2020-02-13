@@ -1,4 +1,4 @@
-package GoogleAPI;
+package main.GoogleAPI;
 
 import java.util.List;
 
@@ -26,6 +26,6 @@ public interface DirectoryGoogleApi {
 
 	public Buildings getResourceBuildings(String executionGoogleUser, String customerId, String nextPageToken, String fields);
 	
-	public List<User> getUsersDetail(String executionGoogleUser, List<String> userids, String fields);
+	public List<User> getUsersDetail(String executionGoogleUser, List<String> userids, String fields, boolean ignoreEntityFailure);
 	
 }

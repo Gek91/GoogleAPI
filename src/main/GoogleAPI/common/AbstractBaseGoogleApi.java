@@ -1,4 +1,4 @@
-package GoogleAPI.util;
+package main.GoogleAPI.common;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,7 +16,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
-public abstract class AbstractBaseGoogleApi {
+public abstract class AbstractBaseGoogleApi<T extends AbstractGoogleJsonClient> {
 
 	/*
 	 * Logger
@@ -33,7 +33,7 @@ public abstract class AbstractBaseGoogleApi {
 	protected static HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 	protected static JsonFactory JSON_FACTORY = new JacksonFactory();
 	//User - service instance map
-	protected Map<String, AbstractGoogleJsonClient> userServiceMap = new ConcurrentHashMap<>();
+	protected Map<String, T> userServiceMap = new ConcurrentHashMap<>();
 	//Authentication service
 	private AbstractBaseGoogleAuthentication authenticationService;
 	
@@ -47,9 +47,10 @@ public abstract class AbstractBaseGoogleApi {
 	/*
 	 * Abstract Methods
 	 */
-	protected abstract AbstractGoogleJsonClient buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer);
+	protected abstract T buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer);
 	protected abstract Collection<String> getScopes();
-		
+	protected abstract AbstractGoogleServiceBatchRequest<T> getBatchBuilder(String executionGoogleUser);
+
 	/*
 	 * Implemented Methods
 	 */
@@ -59,9 +60,9 @@ public abstract class AbstractBaseGoogleApi {
 	}
 	
 	//Retrieve o create specific google service
-	protected AbstractGoogleJsonClient getGoogleService(String executionGoogleUser) {
+	protected T getGoogleService(String executionGoogleUser) {
 		
-		AbstractGoogleJsonClient service = this.userServiceMap.get(executionGoogleUser);
+		T service = this.userServiceMap.get(executionGoogleUser);
 		
 		//not in the user-service map
 		if(service == null) {
