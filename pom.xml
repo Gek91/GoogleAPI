@@ -22,7 +22,7 @@
   	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<logging.slf4j.version>1.7.12</logging.slf4j.version>
-		<logging.log4j.version>2.5</logging.log4j.version>
+		<logging.log4j.version>2.13.3</logging.log4j.version>
 	</properties>
 	
   	<dependencies>
