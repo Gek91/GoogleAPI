@@ -1,15 +1,23 @@
-package main.GoogleAPI.common;
+package main.GoogleAPI.base;
 
 import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.json.GenericJson;
 
-import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest.ErrorsCheck;
+import main.GoogleAPI.base.AbstractGoogleServiceBatch.ErrorsCheck;
 
 public abstract class BasicBatchCallBack<T> extends JsonBatchCallback<T>{
+	
+	private transient Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	protected Logger getLogger() {
+		return logger;
+	}
 	
 	/*
 	 * Fields

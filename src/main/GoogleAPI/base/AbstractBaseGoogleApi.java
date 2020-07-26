@@ -1,4 +1,4 @@
-package main.GoogleAPI.common;
+package main.GoogleAPI.base;
 
 import java.util.Collection;
 import java.util.Map;
@@ -30,8 +30,8 @@ public abstract class AbstractBaseGoogleApi<T extends AbstractGoogleJsonClient> 
 	/*
 	 * Fields
 	 */
-	protected static HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-	protected static JsonFactory JSON_FACTORY = new JacksonFactory();
+	protected HttpTransport httpTransport;
+	protected JsonFactory jsonFactory;
 	//User - service instance map
 	protected Map<String, T> userServiceMap = new ConcurrentHashMap<>();
 	//Authentication service
@@ -41,7 +41,13 @@ public abstract class AbstractBaseGoogleApi<T extends AbstractGoogleJsonClient> 
 	 * Constructor
 	 */
 	public AbstractBaseGoogleApi(AbstractBaseGoogleAuthentication authenticationService) {
+		this(authenticationService, new NetHttpTransport(), new JacksonFactory());
+	}
+	
+	public AbstractBaseGoogleApi(AbstractBaseGoogleAuthentication authenticationService, HttpTransport httpTransport, JsonFactory jsonFactory) {
 		this.authenticationService = authenticationService;
+		this.httpTransport = httpTransport;
+		this.jsonFactory = jsonFactory;	
 	}
 	
 	/*
@@ -49,14 +55,15 @@ public abstract class AbstractBaseGoogleApi<T extends AbstractGoogleJsonClient> 
 	 */
 	protected abstract T buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer);
 	protected abstract Collection<String> getScopes();
-	protected abstract AbstractGoogleServiceBatchRequest<T> getBatchBuilder(String executionGoogleUser);
-
+	protected abstract AbstractGoogleServiceBatch<T> getBatchBuilder(String executionGoogleUser);
+	protected abstract AbstractGoogleServiceBatch<T> getBatchBuilder(String executionGoogleUser, int operationsInBatch);
+	
 	/*
 	 * Implemented Methods
 	 */
 	//Call authentication service creating credential
 	private Credential getCredential(String executionGoogleUser) throws Exception {
-		return authenticationService.authorize(executionGoogleUser, HTTP_TRANSPORT, JSON_FACTORY, getScopes());			
+		return authenticationService.authorize(executionGoogleUser, this.httpTransport, this.jsonFactory, getScopes());			
 	}
 	
 	//Retrieve o create specific google service
@@ -73,7 +80,7 @@ public abstract class AbstractBaseGoogleApi<T extends AbstractGoogleJsonClient> 
 				//Exponential backoff
 				HttpRequestInitializer requestInitializer = new RetryHttpInitializer(getCredential(executionGoogleUser));
 				
-				service = buildGoogleService(HTTP_TRANSPORT, JSON_FACTORY, requestInitializer);
+				service = buildGoogleService(this.httpTransport, this.jsonFactory, requestInitializer);
 				this.userServiceMap.put(executionGoogleUser, service);
 				
 			} catch (Exception e) {

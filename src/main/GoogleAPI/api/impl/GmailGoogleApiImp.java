@@ -1,4 +1,4 @@
-package main.GoogleAPI.impl;
+package main.GoogleAPI.api.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,12 +30,12 @@ import com.google.api.services.gmail.model.ModifyMessageRequest;
 import com.google.api.services.gmail.model.ModifyThreadRequest;
 import com.google.api.services.gmail.model.Thread;
 
-import main.GoogleAPI.GmailGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
-import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest;
-import main.GoogleAPI.data.MailLabelListVisibilityEnum;
-import main.GoogleAPI.data.MailMessageListVisibilityEnum;
+import main.GoogleAPI.api.GmailGoogleApi;
+import main.GoogleAPI.api.data.MailLabelListVisibilityEnum;
+import main.GoogleAPI.api.data.MailMessageListVisibilityEnum;
+import main.GoogleAPI.base.AbstractBaseGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractGoogleServiceBatch;
 
 public class GmailGoogleApiImp extends AbstractBaseGoogleApi<Gmail> implements GmailGoogleApi{
 
@@ -70,6 +70,12 @@ public class GmailGoogleApiImp extends AbstractBaseGoogleApi<Gmail> implements G
 	public GmailBatchBuilder getBatchBuilder(String executionGoogleUser) {
 		
 		return new GmailBatchBuilder(executionGoogleUser, getGmailGoogleService(executionGoogleUser));
+	}
+	
+	@Override
+	protected AbstractGoogleServiceBatch<Gmail> getBatchBuilder(String executionGoogleUser, int operationsInBatch) {
+
+		return new GmailBatchBuilder(executionGoogleUser, getGmailGoogleService(executionGoogleUser), operationsInBatch);
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -846,10 +852,14 @@ public class GmailGoogleApiImp extends AbstractBaseGoogleApi<Gmail> implements G
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Batch builder
 	
-	public class GmailBatchBuilder extends AbstractGoogleServiceBatchRequest<Gmail> {
+	public class GmailBatchBuilder extends AbstractGoogleServiceBatch<Gmail> {
 		
 		public GmailBatchBuilder(String executionGoogleUser, Gmail service) {
 			super(executionGoogleUser, service);
+		}
+		
+		public GmailBatchBuilder(String executionGoogleUser, Gmail service, int operationsInBatch) {
+			super(executionGoogleUser, service, operationsInBatch);
 		}
 	}
 	
@@ -879,6 +889,7 @@ public class GmailGoogleApiImp extends AbstractBaseGoogleApi<Gmail> implements G
         message.setRaw(encodedEmail);
         
         return message;
-	}	
+	}
+
 		
 }

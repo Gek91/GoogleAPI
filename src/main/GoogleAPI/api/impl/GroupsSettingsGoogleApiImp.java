@@ -1,4 +1,4 @@
-package main.GoogleAPI.impl;
+package main.GoogleAPI.api.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,11 +15,11 @@ import com.google.api.services.groupssettings.Groupssettings;
 import com.google.api.services.groupssettings.GroupssettingsScopes;
 import com.google.api.services.groupssettings.model.Groups;
 
-import main.GoogleAPI.GroupsSettingsGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
-import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest;
-import main.GoogleAPI.common.BasicBatchCallBack;
+import main.GoogleAPI.api.GroupsSettingsGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractGoogleServiceBatch;
+import main.GoogleAPI.base.BasicBatchCallBack;
 
 public class GroupsSettingsGoogleApiImp extends AbstractBaseGoogleApi<Groupssettings> implements GroupsSettingsGoogleApi {
 
@@ -100,7 +100,14 @@ public class GroupsSettingsGoogleApiImp extends AbstractBaseGoogleApi<Groupssett
 	}
 
 	@Override
-	protected AbstractGoogleServiceBatchRequest<Groupssettings> getBatchBuilder(String executionGoogleUser) {
+	protected AbstractGoogleServiceBatch<Groupssettings> getBatchBuilder(String executionGoogleUser) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected AbstractGoogleServiceBatch<Groupssettings> getBatchBuilder(String executionGoogleUser,
+			int operationsInBatch) {
 		// TODO Auto-generated method stub
 		return null;
 	}

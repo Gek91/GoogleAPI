@@ -1,4 +1,4 @@
-package main.GoogleAPI.impl;
+package main.GoogleAPI.api.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,14 +22,14 @@ import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
-import main.GoogleAPI.CalendarGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
-import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest;
-import main.GoogleAPI.common.BasicBatchCallBack;
-import main.GoogleAPI.data.CalendarAclRoleEnum;
-import main.GoogleAPI.data.CalendarAclScope;
-import main.GoogleAPI.data.CalendarMinAccessRoleEnum;
+import main.GoogleAPI.api.CalendarGoogleApi;
+import main.GoogleAPI.api.data.CalendarAclRoleEnum;
+import main.GoogleAPI.api.data.CalendarAclScope;
+import main.GoogleAPI.api.data.CalendarMinAccessRoleEnum;
+import main.GoogleAPI.base.AbstractBaseGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractGoogleServiceBatch;
+import main.GoogleAPI.base.BasicBatchCallBack;
 
 public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi<Calendar> implements CalendarGoogleApi {
 
@@ -63,6 +63,12 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi<Calendar> imple
 	public CalendarBatchBuilder getBatchBuilder(String executionGoogleUser) {
 	
 		return new CalendarBatchBuilder(executionGoogleUser, getCalendarGoogleService(executionGoogleUser));
+	}
+	
+	@Override
+	public CalendarBatchBuilder getBatchBuilder(String executionGoogleUser, int operationsInBatch) {
+		
+		return new CalendarBatchBuilder(executionGoogleUser, getCalendarGoogleService(executionGoogleUser), operationsInBatch);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -691,10 +697,14 @@ public class CalendarGoogleApiImpl extends AbstractBaseGoogleApi<Calendar> imple
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Batch builder
 	
-	public class CalendarBatchBuilder extends AbstractGoogleServiceBatchRequest<Calendar> {
+	public class CalendarBatchBuilder extends AbstractGoogleServiceBatch<Calendar> {
 			
 		public CalendarBatchBuilder(String executionGoogleUser, Calendar service) {
 			super(executionGoogleUser, service);
+		}
+		
+		public CalendarBatchBuilder(String executionGoogleUser, Calendar service, int operationsInBatch) {
+			super(executionGoogleUser, service, operationsInBatch);
 		}
 		
 		public CalendarBatchBuilder queueGetCalendarOperation(String calendarId, String fields) {

@@ -1,4 +1,4 @@
-package main.GoogleAPI;
+package main.GoogleAPI.api;
 
 import java.util.List;
 

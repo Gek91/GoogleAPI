@@ -1,4 +1,4 @@
-package main.GoogleAPI.common;
+package main.GoogleAPI.base;
 
 import java.util.Collection;
 

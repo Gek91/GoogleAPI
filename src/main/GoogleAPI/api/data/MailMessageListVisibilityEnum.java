@@ -1,4 +1,4 @@
-package main.GoogleAPI.data;
+package main.GoogleAPI.api.data;
 
 public enum MailMessageListVisibilityEnum {
 	

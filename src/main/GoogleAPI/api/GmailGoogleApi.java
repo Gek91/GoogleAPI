@@ -1,4 +1,4 @@
-package main.GoogleAPI;
+package main.GoogleAPI.api;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import com.google.api.services.gmail.model.ListThreadsResponse;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.Thread;
 
-import main.GoogleAPI.data.MailLabelListVisibilityEnum;
-import main.GoogleAPI.data.MailMessageListVisibilityEnum;
+import main.GoogleAPI.api.data.MailLabelListVisibilityEnum;
+import main.GoogleAPI.api.data.MailMessageListVisibilityEnum;
 
 public interface GmailGoogleApi {
 

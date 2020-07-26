@@ -8,7 +8,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
 
 public class BaseGoogleApiServiceAccountAuth extends AbstractBaseGoogleAuthentication {
 	

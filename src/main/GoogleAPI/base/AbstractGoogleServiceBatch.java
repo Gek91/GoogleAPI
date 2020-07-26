@@ -1,4 +1,4 @@
-package main.GoogleAPI.common;
+package main.GoogleAPI.base;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import com.google.api.client.googleapis.services.json.AbstractGoogleJsonClient;
 import com.google.api.client.googleapis.services.json.AbstractGoogleJsonClientRequest;
 import com.google.api.client.json.GenericJson;
 
-public abstract class AbstractGoogleServiceBatchRequest<T extends AbstractGoogleJsonClient> {
+public abstract class AbstractGoogleServiceBatch<T extends AbstractGoogleJsonClient> {
 
 	private transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -38,7 +38,7 @@ public abstract class AbstractGoogleServiceBatchRequest<T extends AbstractGoogle
 	/*
 	 * Constructors
 	 */
-	public AbstractGoogleServiceBatchRequest(String executionGoogleUser, T service, int operationInBatch) {
+	public AbstractGoogleServiceBatch(String executionGoogleUser, T service, int operationInBatch) {
 		
 		this.service = service;
 		this.executionGoogleUser = executionGoogleUser;
@@ -48,7 +48,7 @@ public abstract class AbstractGoogleServiceBatchRequest<T extends AbstractGoogle
 	}
 	
 	
-	public AbstractGoogleServiceBatchRequest(String executionGoogleUser, T service) {
+	public AbstractGoogleServiceBatch(String executionGoogleUser, T service) {
 		
 		this(executionGoogleUser, service, 50);
 	}
@@ -95,9 +95,10 @@ public abstract class AbstractGoogleServiceBatchRequest<T extends AbstractGoogle
 			
 				BatchRequest batchRequest = this.service.batch();
 
-				//FIXME
-				for(BatchOperation operation : partition) {
-					operation.getRequest().queue(batchRequest, operation.getCallback());
+				for(BatchOperation<?> operation : partition) {
+					if(operation != null && operation.getCallback() != null) {
+						queueOp(operation, batchRequest);
+					}
 				}
 				
 				getLogger().info("Google API - Executing {}° batch request", (i)+"");
@@ -114,6 +115,9 @@ public abstract class AbstractGoogleServiceBatchRequest<T extends AbstractGoogle
 		return errorsCheck.isHasError();
 	}
 	
+	private <K> void queueOp(BatchOperation<K> operation, BatchRequest request) throws IOException {
+		operation.getRequest().queue(request, operation.getCallback());
+	}
 	
 	/*
 	 * Inner Class Operation

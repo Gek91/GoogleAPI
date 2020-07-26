@@ -1,4 +1,4 @@
-package main.GoogleAPI;
+package main.GoogleAPI.api;
 
 import java.util.List;
 
@@ -13,9 +13,9 @@ import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
-import main.GoogleAPI.data.CalendarAclRoleEnum;
-import main.GoogleAPI.data.CalendarAclScope;
-import main.GoogleAPI.data.CalendarMinAccessRoleEnum;
+import main.GoogleAPI.api.data.CalendarAclRoleEnum;
+import main.GoogleAPI.api.data.CalendarAclScope;
+import main.GoogleAPI.api.data.CalendarMinAccessRoleEnum;
 
 public interface CalendarGoogleApi {
 

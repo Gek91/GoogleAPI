@@ -1,4 +1,4 @@
-package main.GoogleAPI.impl;
+package main.GoogleAPI.api.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,10 +18,10 @@ import com.google.api.services.admin.directory.model.Members;
 import com.google.api.services.admin.directory.model.User;
 import com.google.api.services.admin.directory.model.Users;
 
-import main.GoogleAPI.DirectoryGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleApi;
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
-import main.GoogleAPI.common.AbstractGoogleServiceBatchRequest;
+import main.GoogleAPI.api.DirectoryGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleApi;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractGoogleServiceBatch;
 
 
 
@@ -43,7 +43,7 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi<Directory> imp
 
 	@Override
 	protected Directory buildGoogleService(HttpTransport httpTransport, JsonFactory jacksonFactory, HttpRequestInitializer requestInitializer) {
-		return new Directory(HTTP_TRANSPORT, JSON_FACTORY, requestInitializer);
+		return new Directory(httpTransport, jsonFactory, requestInitializer);
 	}
 	
 	private Directory getDirectoryGoogleService(String executionGoogleUser) {
@@ -319,7 +319,13 @@ public class DirectoryGoogleApiImpl extends AbstractBaseGoogleApi<Directory> imp
 	}
 
 	@Override
-	protected AbstractGoogleServiceBatchRequest<Directory> getBatchBuilder(String executionGoogleUser) {
+	protected AbstractGoogleServiceBatch<Directory> getBatchBuilder(String executionGoogleUser) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected AbstractGoogleServiceBatch<Directory> getBatchBuilder(String executionGoogleUser, int operationsInBatch) {
 		// TODO Auto-generated method stub
 		return null;
 	}	

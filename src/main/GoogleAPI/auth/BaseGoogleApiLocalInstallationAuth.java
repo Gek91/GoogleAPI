@@ -11,7 +11,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 
-import main.GoogleAPI.common.AbstractBaseGoogleAuthentication;
+import main.GoogleAPI.base.AbstractBaseGoogleAuthentication;
 	
 public class BaseGoogleApiLocalInstallationAuth extends AbstractBaseGoogleAuthentication {
 
