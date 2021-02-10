@@ -79,6 +79,10 @@ public abstract class AbstractGoogleServiceBatch<T extends AbstractGoogleJsonCli
 	}
 	
 	public boolean executionOperationsInBatch() {
+		return executionOperationsInBatch(null);
+	}
+	
+	public boolean executionOperationsInBatch(Long batchExecutionsMillisecondsDelay) {
 				
 		if(operations == null || operations.isEmpty()) {
 			return false;
@@ -104,15 +108,23 @@ public abstract class AbstractGoogleServiceBatch<T extends AbstractGoogleJsonCli
 				getLogger().info("Google API - Executing {}° batch request", (i)+"");
 				batchRequest.execute();
 				i++;
+				
+				intraExecutionDelay(batchExecutionsMillisecondsDelay);
 			}			
 			
 			getLogger().info("Google API - Batch operations executed.");
 			
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		
 		return errorsCheck.isHasError();
+	}
+	
+	private void intraExecutionDelay(Long batchExecutionsMillisecondsDelay) throws InterruptedException {
+		if(batchExecutionsMillisecondsDelay != null) {
+				Thread.sleep(batchExecutionsMillisecondsDelay);
+		}
 	}
 	
 	private <K> void queueOp(BatchOperation<K> operation, BatchRequest request) throws IOException {

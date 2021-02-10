@@ -20,7 +20,6 @@ public interface GmailGoogleApi {
 	/*
 	 * Message
 	 */
-	//TODO: too many parameters
 	public ListMessagesResponse getMessageList(String executionGoogleUser, String query, List<String> labelIds, String nextPageToken);
 
 	public Message getMessage(String executionGoogleUser, String messageId, String fields);
